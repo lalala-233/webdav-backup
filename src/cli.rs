@@ -2,7 +2,11 @@ use crate::prelude::*;
 use clap::Parser;
 use reqwest_dav::{Client, DecodeError, Depth, StatusMismatchedError};
 use sevenz_rust2::ArchiveWriter;
-use std::{fs, io::Cursor, path::PathBuf};
+use std::{
+    fs,
+    io::Cursor,
+    path::{Path, PathBuf},
+};
 
 #[derive(Parser, Debug)]
 #[clap(version)]
@@ -12,7 +16,7 @@ struct Cli {
     config: PathBuf,
 
     /// Path to the directory to compress
-    paths: PathBuf,
+    path: PathBuf,
 }
 /// # Errors
 ///
@@ -22,33 +26,21 @@ pub async fn run() -> Result<(), Error> {
 
     let config = fs::read_to_string(&args.config)?;
     let config: Config = toml::from_str(&config)?;
-    let configuration = config.get_compress_configuration();
-    let filename = config.get_archive_name()?;
+
     let mut webdav_subfolder = config.get_webdav_subfolder();
-
-    // Cursor<Vec<u8>> can be the target of `sevenz::compress_encrypted()`
-
-    let mut buffer = Cursor::new(Vec::new());
-    let mut writer = ArchiveWriter::new(&mut buffer)?;
-
-    writer.set_content_methods(configuration);
-    writer.push_source_path(&args.paths, |_| true)?;
-    writer.finish()?;
+    let webdav_subfolder_str = webdav_subfolder.to_str().ok_or(Error::PathConversion)?;
 
     let client = config.get_webdav_client()?;
-
-    let webdav_subfolder_str = webdav_subfolder.to_str().ok_or(Error::PathConversion)?;
     if not_exists(&client, webdav_subfolder_str).await? {
         client.mkcol(webdav_subfolder_str).await?;
     }
 
+    let filename = config.get_archive_name()?;
     webdav_subfolder.push(filename);
-    client
-        .put(
-            webdav_subfolder.to_str().ok_or(Error::PathConversion)?,
-            buffer.into_inner(),
-        )
-        .await?;
+    let webdav_file_path = webdav_subfolder.to_str().ok_or(Error::PathConversion)?;
+
+    let body = get_file(&config, &args.path)?;
+    client.put(webdav_file_path, body).await?;
 
     Ok(())
 }
@@ -63,4 +55,15 @@ async fn not_exists(client: &Client, path: &str) -> Result<bool, reqwest_dav::Er
         Ok(_) => Ok(false),
         Err(e) => Err(e),
     }
+}
+
+fn get_file(config: &Config, path: &Path) -> Result<Vec<u8>, Error> {
+    let mut buffer = Cursor::new(Vec::new());
+    let mut writer = ArchiveWriter::new(&mut buffer)?;
+
+    writer.set_content_methods(config.get_compress_configuration());
+    writer.push_source_path(path, |_| true)?;
+    writer.finish()?;
+
+    Ok(buffer.into_inner())
 }
