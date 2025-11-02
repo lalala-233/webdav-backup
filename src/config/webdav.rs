@@ -1,8 +1,10 @@
 use serde::Deserialize;
+use std::path::PathBuf;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct WebDAVConfig {
-    pub url: String,
+    pub host: String,
+    pub subfolder: Option<PathBuf>,
     pub username: String,
-    pub password: Option<String>,
+    pub password: String,
 }

@@ -1,15 +1,16 @@
 [package]
 name = "webdav-backup"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }
-reqwest = { version = "0.12", features = ["blocking"] }
+reqwest_dav = "0.2"
 serde = { version = "1.0", features = ["derive"] }
 sevenz-rust2 = "0.19"
 thiserror = "2.0"
 time = { version = "0.3", features = ["formatting", "local-offset"] }
+tokio = { version = "1.48", features = ["full"] }
 toml = "0.9"
 
 [profile.release]

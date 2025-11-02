@@ -10,4 +10,8 @@ pub enum Error {
     Sevenz(#[from] sevenz_rust2::Error),
     #[error("Time Error: {0}")]
     Time(#[from] time::Error),
+    #[error("WebDAV Error: {0}")]
+    WebDAV(#[from] reqwest_dav::Error),
+    #[error("Path COnversion Error: Contains non-UTF8 characters")]
+    PathConversion,
 }

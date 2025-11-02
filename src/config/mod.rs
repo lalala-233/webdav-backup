@@ -1,15 +1,19 @@
 pub mod backup;
 pub mod webdav;
 
+use std::path::PathBuf;
+
 use crate::prelude::*;
+use reqwest_dav::{Auth, Client, ClientBuilder};
 use serde::Deserialize;
 use sevenz_rust2::{EncoderConfiguration, encoder_options};
 use time::{OffsetDateTime, format_description};
 
 const DEFAULT_COMPRESS_LEVEL: u32 = 6;
 const DEFAULT_PREFIX: &str = "backup";
+const DEFAULT_SUBFOLDER: &str = "/dav/backup/";
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct Config {
     backup: BackupConfig,
     webdav: WebDAVConfig,
@@ -39,5 +43,18 @@ impl Config {
             .unwrap_or_else(|| DEFAULT_PREFIX.to_string());
 
         Ok(format!("{prefix}-{time}.7z"))
+    }
+    pub fn get_webdav_client(&self) -> Result<Client, Error> {
+        let webdav = self.webdav.clone();
+        Ok(ClientBuilder::new()
+            .set_host(webdav.host)
+            .set_auth(Auth::Basic(webdav.username, webdav.password))
+            .build()?)
+    }
+    pub fn get_webdav_subfolder(&self) -> PathBuf {
+        self.webdav
+            .subfolder
+            .clone()
+            .unwrap_or_else(|| PathBuf::from(DEFAULT_SUBFOLDER))
     }
 }

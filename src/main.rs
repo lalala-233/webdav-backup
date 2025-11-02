@@ -1,6 +1,8 @@
 use webdav_backup::run;
-fn main() {
-    if let Err(error) = run() {
+
+#[tokio::main]
+async fn main() {
+    if let Err(error) = run().await {
         eprintln!("{error}");
     }
 }

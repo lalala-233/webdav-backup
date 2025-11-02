@@ -3,7 +3,6 @@
 pub mod cli;
 mod config;
 mod error;
-mod webdav;
 
 pub use cli::run;
 mod prelude {
