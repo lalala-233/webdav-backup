@@ -14,7 +14,9 @@ struct Cli {
     /// Path to the config file
     #[clap(short, long, default_value = "config.toml")]
     config: PathBuf,
-
+    #[clap(short = 'n', long)]
+    /// Print filename that will be uploaded, don't actually compress and upload file
+    dry_run: bool,
     /// Path to the directory to compress
     path: PathBuf,
 }
@@ -30,12 +32,18 @@ pub async fn run() -> Result<(), Error> {
     let mut webdav_subfolder = config.get_webdav_subfolder();
     let webdav_subfolder_str = webdav_subfolder.to_str().ok_or(Error::PathConversion)?;
 
+    let filename = config.get_archive_name()?;
+    if args.dry_run {
+        let webdav_file_path = webdav_subfolder.to_str().ok_or(Error::PathConversion)?;
+        println!("{filename} will be uploaded to {webdav_file_path}");
+        return Ok(());
+    }
+
     let client = config.get_webdav_client()?;
     if not_exists(&client, webdav_subfolder_str).await? {
         client.mkcol(webdav_subfolder_str).await?;
     }
 
-    let filename = config.get_archive_name()?;
     webdav_subfolder.push(filename);
     let webdav_file_path = webdav_subfolder.to_str().ok_or(Error::PathConversion)?;
 
