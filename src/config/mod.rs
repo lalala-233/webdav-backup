@@ -7,7 +7,7 @@ use crate::prelude::*;
 use reqwest_dav::{Auth, Client, ClientBuilder};
 use serde::Deserialize;
 use sevenz_rust2::{EncoderConfiguration, encoder_options};
-use time::{OffsetDateTime, format_description};
+use time::{OffsetDateTime, macros::format_description};
 
 const DEFAULT_COMPRESS_LEVEL: u32 = 6;
 const DEFAULT_PREFIX: &str = "backup";
@@ -32,17 +32,16 @@ impl Config {
         ]
     }
     pub fn get_archive_name(&self) -> Result<String, time::Error> {
-        let now = OffsetDateTime::now_local()?;
-        let format = format_description::parse("[year][month][day]-[hour][minute][second]")?;
-        let time = now.format(&format)?;
+        let now = OffsetDateTime::now_utc();
+        let time = now.format(&format_description!(
+            version = 3,
+            "[year]-[month]-[day]T[hour]:[minute]:[second]Z"
+        ))?;
 
-        let prefix = self
-            .backup
-            .prefix
-            .clone()
-            .unwrap_or_else(|| DEFAULT_PREFIX.to_string());
-
-        Ok(format!("{prefix}-{time}.7z"))
+        Ok(format!(
+            "{}-{time}.7z",
+            self.backup.prefix.as_deref().unwrap_or(DEFAULT_PREFIX)
+        ))
     }
     pub fn get_webdav_client(&self) -> Result<Client, Error> {
         let webdav = self.webdav.clone();
