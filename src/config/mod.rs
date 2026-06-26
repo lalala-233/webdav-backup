@@ -1,12 +1,11 @@
 pub mod backup;
 pub mod webdav;
 
-use std::path::PathBuf;
-
 use crate::prelude::*;
 use reqwest_dav::{Auth, Client, ClientBuilder};
 use serde::Deserialize;
 use sevenz_rust2::{EncoderConfiguration, encoder_options};
+use std::path::PathBuf;
 use time::{OffsetDateTime, macros::format_description};
 
 const DEFAULT_COMPRESS_LEVEL: u32 = 6;
