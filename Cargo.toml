@@ -4,6 +4,7 @@ version = "0.1.6"
 edition = "2024"
 
 [dependencies]
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
 clap = { version = "4.6", features = ["derive"] }
 reqwest_dav = "0.3"
 serde = { version = "1.0", features = ["derive"] }
@@ -13,7 +14,6 @@ sevenz-rust2 = { version = "0.21", default-features = false, features = [
     "util",
 ] }
 thiserror = "2.0"
-time = { version = "0.3", features = ["formatting", "macros"] }
 tokio = { version = "1.52", default-features = false, features = [
     "macros",
     "rt-multi-thread",

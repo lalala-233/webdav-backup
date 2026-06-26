@@ -2,11 +2,11 @@ pub mod backup;
 pub mod webdav;
 
 use crate::prelude::*;
+use chrono::{SecondsFormat, Utc};
 use reqwest_dav::{Auth, Client, ClientBuilder};
 use serde::Deserialize;
 use sevenz_rust2::{EncoderConfiguration, encoder_options};
 use std::path::PathBuf;
-use time::{OffsetDateTime, macros::format_description};
 
 const DEFAULT_COMPRESS_LEVEL: u32 = 6;
 const DEFAULT_PREFIX: &str = "backup";
@@ -30,17 +30,13 @@ impl Config {
             .into(),
         ]
     }
-    pub fn get_archive_name(&self) -> Result<String, time::Error> {
-        let now = OffsetDateTime::now_utc();
-        let time = now.format(&format_description!(
-            version = 3,
-            "[year]-[month]-[day]T[hour]:[minute]:[second]Z"
-        ))?;
+    pub fn get_archive_name(&self) -> String {
+        let time = Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true);
 
-        Ok(format!(
+        format!(
             "{}-{time}.7z",
             self.backup.prefix.as_deref().unwrap_or(DEFAULT_PREFIX)
-        ))
+        )
     }
     pub fn get_webdav_client(&self) -> Result<Client, Error> {
         let webdav = self.webdav.clone();

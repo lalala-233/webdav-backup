@@ -32,7 +32,7 @@ pub async fn run() -> Result<(), Error> {
     let mut webdav_subfolder = config.get_webdav_subfolder();
     let webdav_subfolder_str = webdav_subfolder.to_str().ok_or(Error::PathConversion)?;
 
-    let filename = config.get_archive_name()?;
+    let filename = config.get_archive_name();
     if args.dry_run {
         let webdav_file_path = webdav_subfolder.to_str().ok_or(Error::PathConversion)?;
         println!("{filename} will be uploaded to {webdav_file_path}");
