@@ -78,6 +78,7 @@ Arguments:
 
 Options:
   -c, --config <CONFIG>  Path to the config file [default: config.toml]
+  -n, --dry-run          Print filename that will be uploaded, don't actually compress and upload file
   -h, --help             Print help
   -V, --version          Print version
 ```
@@ -90,7 +91,7 @@ Backup files are automatically named using the pattern:
 {prefix}-{timestamp}.zip
 ```
 
-Example: `backup-20250114-122012.zip`
+Example: `backup-2026-06-26T08:13:21Z.7z`
 
 ## Tested WebDAV Services
 
