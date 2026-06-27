@@ -10,7 +10,7 @@ use std::{
 
 #[derive(Parser, Debug)]
 #[clap(version)]
-struct Cli {
+pub struct Cli {
     /// Path to the config file
     #[clap(short, long, default_value = "config.toml")]
     config: PathBuf,
@@ -20,37 +20,44 @@ struct Cli {
     /// Path to the directory to compress
     path: PathBuf,
 }
-/// # Errors
-///
-/// It will return error if something goes wrong
-pub async fn run() -> Result<(), Error> {
-    let args = Cli::parse();
 
-    let config = fs::read_to_string(&args.config)?;
-    let config: Config = toml::from_str(&config)?;
+impl Cli {
+    /// Performs the backup upload.
+    ///
+    /// # Errors
+    /// This function can fail with:
+    /// - `Io` – config or archive file I/O errors;
+    /// - `Parse` – invalid TOML syntax in config;
+    /// - `Sevenz` – 7‑zip compression/decompression errors;
+    /// - `WebDAV` – remote server connection or upload failures;
+    /// - `PathConversion` – non‑UTF‑8 path encountered.
+    pub async fn run(&self) -> Result<(), Error> {
+        let config = fs::read_to_string(&self.config)?;
+        let config: Config = toml::from_str(&config)?;
 
-    let mut webdav_subfolder = config.get_webdav_subfolder();
-    let webdav_subfolder_str = webdav_subfolder.to_str().ok_or(Error::PathConversion)?;
+        let mut webdav_subfolder = config.get_webdav_subfolder();
+        let webdav_subfolder_str = webdav_subfolder.to_str().ok_or(Error::PathConversion)?;
 
-    let filename = config.get_archive_name();
-    if args.dry_run {
+        let filename = config.get_archive_name();
+        if self.dry_run {
+            let webdav_file_path = webdav_subfolder.to_str().ok_or(Error::PathConversion)?;
+            println!("{filename} will be uploaded to {webdav_file_path}");
+            return Ok(());
+        }
+
+        let client = config.get_webdav_client()?;
+        if not_exists(&client, webdav_subfolder_str).await? {
+            client.mkcol(webdav_subfolder_str).await?;
+        }
+
+        webdav_subfolder.push(filename);
         let webdav_file_path = webdav_subfolder.to_str().ok_or(Error::PathConversion)?;
-        println!("{filename} will be uploaded to {webdav_file_path}");
-        return Ok(());
+
+        let body = get_file(&config, &self.path)?;
+        client.put(webdav_file_path, body).await?;
+
+        Ok(())
     }
-
-    let client = config.get_webdav_client()?;
-    if not_exists(&client, webdav_subfolder_str).await? {
-        client.mkcol(webdav_subfolder_str).await?;
-    }
-
-    webdav_subfolder.push(filename);
-    let webdav_file_path = webdav_subfolder.to_str().ok_or(Error::PathConversion)?;
-
-    let body = get_file(&config, &args.path)?;
-    client.put(webdav_file_path, body).await?;
-
-    Ok(())
 }
 
 async fn not_exists(client: &Client, path: &str) -> Result<bool, reqwest_dav::Error> {
